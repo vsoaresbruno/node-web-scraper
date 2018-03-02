@@ -1,38 +1,61 @@
 var express = require('express');
-var fs      = require('fs');
+var fs = require('fs');
 var request = require('request');
 var cheerio = require('cheerio');
-var app     = express();
+var app = express();
 
-app.get('/scrape', function(req, res){
+app.get('/scrape', function (req, res) {
   // Let's scrape Anchorman 2
-  url = 'http://www.imdb.com/title/tt1229340/';
+  url = 'http://www.atpworldtour.com/en/tournaments';
 
-  request(url, function(error, response, html){
-    if(!error){
+  request(url, function (error, response, html) {
+    if (!error) {
       var $ = cheerio.load(html);
 
-      var title, release, rating;
-      var json = { title : "", release : "", rating : ""};
+      var title, release, date, tournaments;
+      var json = { tournaments: { months: [] }, title: "", date: "" };
 
-      $('.title_wrapper').filter(function(){
-        var data = $(this);
-        title = data.children().first().text().trim();
-        release = data.children().last().children().last().text().trim();
+      $(".accordion-label").each(function (index) {
 
-        json.title = title;
-        json.release = release;
-      })
+        var data = $(this),
+          tournament = $('.tourney-result'),
+          monthFormat = data.text().trim().split(" "),
+          tournamentTitle = [],
+          tournamentCity = [],
+          month = monthFormat[0]
 
-      $('.ratingValue').filter(function(){
-        var data = $(this);
-        rating = data.text().trim();
 
-        json.rating = rating;
-      })
+        data.siblings('.centered-content-wrapper').find('.tourney-result.tourney-result').each(function (index) {
+
+          tournaCity = $(this).find('.tourney-location').text().trim();
+          tournaTitle = $(this).find('.tourney-title').text().trim();
+          tournamentTitle.push(tournaTitle);
+          tournamentCity.push(tournaCity);
+        });
+
+        json.tournaments.months.push({ month: month[0], tournament: { tournamentTitle, tournamentCity } });
+
+      });
+
+      // $('.player-profile-hero-name').filter(function () {
+      //   var data = $(this);
+
+      //   title = data.children().first().text().trim();
+      //   json.title = title;
+      //   // json.release = release;
+      // });
+
+      // $('.hero-date-range').filter(function () {
+      //   var data = $(this);
+      //   date = data.text().trim();
+
+      //   json.date = date;
+      // });
+
+
     }
 
-    fs.writeFile('output.json', JSON.stringify(json, null, 4), function(err){
+    fs.writeFile('output.json', JSON.stringify(json, null, 4), function (err) {
       console.log('File successfully written! - Check your project directory for the output.json file');
     })
 
